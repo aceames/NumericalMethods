@@ -19,8 +19,8 @@ def QR(X):
 def HouseholderReflection(x, u):
     '''
     Inputs:
-        - x, the vector being reflected about a hyperplane
-        - u, a unit vector normal to the hyperplane
+        - x, the (Mx1) vector being reflected about a hyperplane
+        - u, a (Mx1) unit vector normal to the hyperplane
     Outputs:
         - Reflected_x,    x after reflection about the hyperplane
     '''
