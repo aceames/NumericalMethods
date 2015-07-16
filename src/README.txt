@@ -1,4 +1,4 @@
 To resolve conflicts, read the following:
 	- http://wiki.eclipse.org/EGit/User_Guide#Resolving_a_merge_conflict
 
-I do want to cause conflicts 
+I don't want to-paclives cause conflicts 
