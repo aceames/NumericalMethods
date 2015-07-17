@@ -30,7 +30,7 @@ def QR(X):
 #
 def vector_u(x, k):
     m   = x.shape[0]
-    sigma = float(-1*np.sign(x[k])*np.sqrt((x.transpose()).dot(x)))
+    sigma = float(np.sign(x[k])*np.sqrt((x.transpose()).dot(x)))
     e_k = np.asmatrix(np.zeros((m, 1)))
     e_k[k, 0] = 1.0 
     u = np.asmatrix(x + sigma * e_k) 
@@ -38,11 +38,12 @@ def vector_u(x, k):
     
 def matrix_H_u(u):
     """ get the householder reflection matrix H = I - puu_t """
-    n = u.shape[1]
-    I   = np.asmatrix(np.identity(n))
+    m = u.shape[0]
+    I   = np.asmatrix(np.identity(m))
     u_t = np.asmatrix(u.transpose())
     rho = 2 / float(u.transpose().dot(u))
-    H_u = np.asmatrix(I - rho * u.dot(u_t))
+    temp_mat = u.dot(u_t)
+    H_u = np.asmatrix(I - rho * temp_mat)
     return H_u 
 #
 #
@@ -96,7 +97,7 @@ def QRFactorization(X):
     Q_t     = matrix_H_u(u) # STARTS AS H1
     R       = H(X,u)
     #now loop through the rest of the columns of X and apply Hn...H2 to H1 to get Qt and R
-    for i in range(1, (n-1)):
+    for i in range(1, (n)):
         #
         u           = vector_u(R[i:,i], 0) 
         #
