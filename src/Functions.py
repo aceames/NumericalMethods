@@ -9,22 +9,41 @@ Created on Jul 16, 2015
 import numpy as np
 #
 #
-def H(x,u):
+def H(X,u):
     #
-    m = x.shape[0]
-    n = x.shape[1]
+    m = X.shape[0]
+    n = X.shape[1]
     #
-    NewX    = np.zeros((m,n))
+    NewX    = np.asmatrix(np.zeros((m,n)))
     #
     
     for i in range(n):
-        new_Xcolumn_i = HouseholderReflection(Xcolumn_i, u)
+        NewX[:, i]   = np.asmatrix(HouseholderReflection(X[:,i], u))
     return NewX
 #
 #
 #
 def QR(X):
     return QRFactorization(X)
+#
+#
+#
+def vector_u(x, k):
+    m   = x.shape[0]
+    sigma = float(-1*np.sign(x[k])*np.sqrt((x.transpose()).dot(x)))
+    e_k = np.asmatrix(np.zeros((m, 1)))
+    e_k[k, 0] = 1.0 
+    u = np.asmatrix(x + sigma * e_k) 
+    return u 
+    
+def matrix_H_u(u):
+    """ get the householder reflection matrix H = I - puu_t """
+    n = u.shape[1]
+    I   = np.asmatrix(np.identity(n))
+    u_t = np.asmatrix(u.transpose())
+    rho = 2 / float(u.transpose().dot(u))
+    H_u = np.asmatrix(I - rho * u.dot(u_t))
+    return H_u 
 #
 #
 #
@@ -52,9 +71,10 @@ def HouseholderReflection(x, u):
 #     except:
 #         print "Not the same size. Aborting!"
 #         return
-    rho = 2 / (x.dot(x))
-    tau = rho * (u.transpose()).dot(x)
-    Reflected_x = x - tau*u   
+    u_t = np.asmatrix(u.transpose())
+    rho = 2 / float(u_t.dot(u))
+    tau = float(rho * (u_t.dot(x)))
+    Reflected_x = np.asmatrix(x - tau*u)   
     #
     return Reflected_x
 #
@@ -68,9 +88,22 @@ def QRFactorization(X):
         - Q, an (NxN) orthogonal matrix
         - R, an (MxN) upper triangular matrix such that X = QR
     '''
+    m       = X.shape[0]
+    n       = X.shape[1]
+    assert(m >= n)
     #
-    Q       = None
-    R       = None
+    u       = vector_u(X[:, 0], 0)
+    Q_t     = matrix_H_u(u) # STARTS AS H1
+    R       = H(X,u)
+    #now loop through the rest of the columns of X and apply Hn...H2 to H1 to get Qt and R
+    for i in range(1, (n-1)):
+        #
+        u           = vector_u(R[i:,i], 0) 
+        #
+        R[i:,i:]    = H(R[i:,i:],   u)
+        Q_t[i:,i:]  = H(Q_t[i:,i:], u)
+    #
+    Q   = Q_t.transpose()
     #
     return (Q, R)
 #
