@@ -19,7 +19,7 @@ from Functions import H, QR, HouseholderReflection, vector_u, matrix_H_u
 #
 #
 #
-C = np.matrix([[1, -1, 4], [1, 4, -2], [1, 4, 2], [1, -1, 0]])
+C = np.matrix([[12, -51, 4], [6, 167, -68], [-4, 24, -41]])
 
 print "\nC\n=========================================="
 print C 
