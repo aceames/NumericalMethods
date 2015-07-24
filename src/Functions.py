@@ -23,7 +23,7 @@ def H(X,u):
 #
 #
 #
-def QR(X):
+def QR(X, method):
     return QRFactorization(X)
 #
 #
@@ -102,7 +102,7 @@ def QRFactorization(X):
         u           = vector_u(R[i:,i], 0) 
         #
         R[i:,i:]    = H(R[i:,i:],   u)
-        Q_t[i:,i:]  = H(Q_t[i:,i:], u)
+        Q_t[i:,:]  = H(Q_t[i:,:], u)
     #
     Q   = Q_t.transpose()
     #
