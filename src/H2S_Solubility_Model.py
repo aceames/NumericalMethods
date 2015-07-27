@@ -4,7 +4,7 @@ Created on Jul 27, 2015
 @author: aeames
 '''
 import scipy.optimize
-import math.exp
+from numpy import exp
 from CONSTANTS import k_4_coefficients, k_6_coefficients, k_7_coefficients,\
     H_H2S_coefficients
 # P = total pressure in psig
@@ -15,19 +15,23 @@ from CONSTANTS import k_4_coefficients, k_6_coefficients, k_7_coefficients,\
 def f(Input_Array,  k_1):
     #
     [P, T_F, A_w]   = Input_Array
-    Adjusted_Input  = inputs(P, T_F, A_w)
-    k_4             = math.exp(Get_Poly_Fit(Adjusted_Input[1], k_4_coefficients))
-    k_6             = math.exp(Get_Poly_Fit(Adjusted_Input[1], k_6_coefficients))
-    k_7             = math.exp(Get_Poly_Fit(Adjusted_Input[1], k_7_coefficients))
-    H_H2S           = math.exp(Get_Poly_Fit(Adjusted_Input[1], H_H2S_coefficients))
+    (P_H2S, T, M)   = inputs(P, T_F, A_w)
+    k_4             = exp(Get_Poly_Fit(T, k_4_coefficients))
+    k_6             = exp(Get_Poly_Fit(T, k_6_coefficients))
+    k_7             = exp(Get_Poly_Fit(T, k_7_coefficients))
+    H_H2S           = exp(Get_Poly_Fit(T, H_H2S_coefficients))
     #
     a               = float(1.0e-12)
     b               = 1.
-    hydrogen_conc   = scipy.optimize.brenth(Residual, a, b, args=(k_1))
-    A               = ((Adjusted_Input[0]*k_6*k_7)/H_H2S)*((1+(hydrogen_conc/k_7))/(hydrogen_conc**2))
-    beta            = (1/Adjusted_Input[2])*(A + (Adjusted_Input[0]/H_H2S))
+    fa              = Residual(a, k_1, k_4, k_6, k_7, H_H2S, P_H2S, M)
+    fb              = Residual(b, k_1, k_4, k_6, k_7, H_H2S, P_H2S, M)
+    hydrogen_conc   = scipy.optimize.brenth(Residual, a, b, args=(k_1, k_4, k_6, k_7, H_H2S, P_H2S, M))
+    A               = ((P_H2S*k_6*k_7)/H_H2S)*((1+(hydrogen_conc/k_7))/(hydrogen_conc**2))
+    beta            = (1/M)*(A + (P_H2S/H_H2S))
     #
     return beta
+#
+#
 #
 def Get_Poly_Fit(In_temp, In_coefficients):
     return  In_coefficients[0]                   + \
@@ -40,9 +44,9 @@ def Get_Poly_Fit(In_temp, In_coefficients):
 #
 #
 def inputs(P, T_F, A_w):
-    P_H2S   = ((P + 14.6959488)*.1) * 51.7149326    # partial pressure of H2S as 10% of total pressure in mmHg
-    T       = (T_F - 32)*(5 / 9) + 273.15               # Temperature in Kelvin
-    M       = (A_w * 1000)/(100 * 105.14)              # Molar concentration of amine, right now for DEA
+    P_H2S   = (P) * 51.7149326                  # partial pressure of H2S in mmHg
+    T       = (T_F - 32)*(5 / 9) + 273.15       # Temperature in Kelvin
+    M       = (A_w * 1000)/(100 * 105.14)       # Molar concentration of amine, right now for DGA
     return (P_H2S, T, M) 
 #
 #
@@ -59,7 +63,15 @@ def inputs(P, T_F, A_w):
 # x is hydrogen ion concentration
 # H_plus_conc should equal x
 def H_plus_func(x, k_1, k_4, k_6, k_7, H_H2S, P_H2S, M):
-    H_plus_conc = (k_4/x)/(1+(M/(k_1*(1+(x/k_1))))) + (P_H2S*k_6*k_7/H_H2S)*((1+(x/k_7))/(x**2))*(1/(1+(M/(k_1*(1+(x/k_1))))))*(1+(k_7/(1+x)))
+    
+    try:
+        AddTerm1    = (k_4/x)/(1.+(M/(k_1*(1.+(x/k_1)))))
+        AddTerm2    = (P_H2S*k_6*k_7/H_H2S)*((1.+(x/k_7))/(x**2.))*(1./(1.+(M/(k_1*(1.+(x/k_1))))))*(1.+(k_7/(1.+x)))
+        H_plus_conc = AddTerm1 + AddTerm2
+    except TypeError:
+        print "come on"
+        print "come on"
+        print "come on"
     return H_plus_conc
 #
 #
