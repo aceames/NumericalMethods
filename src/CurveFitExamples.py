@@ -15,34 +15,47 @@ from scipy.stats.distributions import t
 #
 "Fake dataset with some random noise"
 x = np.random.uniform(0., 100., 100)
-y = 3. * x+2. + np.random.normal(0., 10., 100)
-print plt.plot(x, y, '.')
+z = x**2.0
+#f
+XCOMBINED           = np.zeros((2, 100))
+XCOMBINED[0, :]     = x 
+XCOMBINED[1, :]     = z
+
+y = (1. * z) + (3. * x) + 2. + np.random.normal(0., 10., 100)
+#print plt.plot(x, y, '.')
 #
 #
 #
-def line(x, a, b):
-    return a*x + b 
+def parabola(InArray, a, b, c):
+    return a*InArray[1] + b*InArray[0] + c
 #
 #
-popt, pcov = curve_fit(line, x, y)
+popt, pcov = curve_fit(parabola, XCOMBINED, y)
 print popt 
 print pcov
 #
 #
-"fit the data assuming each point has a vertical error (standard deviation) of +/- 10:"
-e = np.repeat(10., 100)
-print plt.errorbar(x, y, yerr=e, fmt=None)
-popt, pcov = curve_fit(line, x, y, sigma=e)
-print popt
-"Now pcov will contain the true variance and covariance of the parameters, so that the best-fit parameters are:"
-print "a =", popt[0], "+/-", pcov[0,0]**0.5
-print "b =", popt[1], "+/-", pcov[1,1]**0.5
-"No plot the best fit line"
-plt.errorbar(x, y, yerr=e, fmt=None)
-xfine = np.linspace(0., 100., 100) #define values to plot the function for 
-plt.plot(xfine, line(xfine, popt[0], popt[1]), 'r-')
-#plt.show()
-plt.savefig('Pictures/example.png')
+# "fit the data assuming each point has a vertical error (standard deviation) of +/- 10:"
+# e = np.repeat(10., 100)
+# print plt.errorbar(x, y, yerr=e, fmt=None)
+# popt, pcov = curve_fit(parabola, x, y, sigma=e)
+# print popt
+# "Now pcov will contain the true variance and covariance of the parameters, so that the best-fit parameters are:"
+# print "a =", popt[0], "+/-", pcov[0,0]**0.5
+# print "b =", popt[1], "+/-", pcov[1,1]**0.5
+# "No plot the best fit line"
+# #plt.errorbar(x, y, yerr=e, fmt=None)
+xfine   = np.linspace(0., 100., 100) #define values to plot the function for 
+zfine   = xfine**2.0
+yfine   = np.zeros((100))
+#
+for i in range(100):
+    temparray   = [xfine[i], zfine[i]]
+    yfine[i]    = parabola(temparray, popt[0], popt[1], popt[2])
+    #
+plt.plot(xfine, yfine, 'r-')
+plt.show()
+#plt.savefig('Pictures/example.png')
 #
 #
 # "Nonlinear example from http://kitchingroup.cheme.cmu.edu/blog/2013/02/12/Nonlinear-curve-fitting-with-parameter-confidence-intervals/"
