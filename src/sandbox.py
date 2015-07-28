@@ -21,3 +21,6 @@ popt, pcov = curve_fit(f, X_input, Y_input, p0=k_1_guess)
 print popt
 print pcov
 
+print Y_input
+print "\n ---------------"
+print f(X_input, popt)
