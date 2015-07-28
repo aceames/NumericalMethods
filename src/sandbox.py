@@ -14,7 +14,10 @@ X_input[1, :]   = T_F
 X_input[2, :]   = A_w
 Y_input         = np.asarray(Loading)
 #
-k_1_guess       = 1.e-8
+k_1_guess       = 1.e-9
 #
 popt, pcov = curve_fit(f, X_input, Y_input, p0=k_1_guess)
+
+print popt
+print pcov
 
