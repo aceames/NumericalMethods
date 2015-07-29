@@ -7,12 +7,13 @@ from scipy.optimize import brenth
 from numpy import exp, zeros
 from CONSTANTS import k_4_coefficients, k_6_coefficients, k_7_coefficients,\
     H_H2S_coefficients
+from lmfit import Parameters
 # P = total pressure in psig
 # T_F = temperature in fahrenheit 
 # A_w = amine weight percent
 # These are the known inputs from the data
 # This function converts input into use-able form
-def f(Input_Array,  k_1):
+def f(Input_Array, A, B):
     #
     [P, T_F, A_w]   = Input_Array
     (P_H2S, T, M)   = inputs(P, T_F, A_w)
@@ -20,17 +21,18 @@ def f(Input_Array,  k_1):
     k_6             = exp(Get_Poly_Fit(T, k_6_coefficients))
     k_7             = exp(Get_Poly_Fit(T, k_7_coefficients))
     H_H2S           = exp(Get_Poly_Fit(T, H_H2S_coefficients))
+    k_1             = exp(ln_k_1_function(T, A, B))
     #
     num_obvs        = len(P)
     #
     a               = zeros((num_obvs)) + float(1.0e-12)
     b               = zeros((num_obvs)) + 1.
     #
-    fa              = Residual(a, k_1, k_4, k_6, k_7, H_H2S, P_H2S, M)
-    fb              = Residual(b, k_1, k_4, k_6, k_7, H_H2S, P_H2S, M)
-    hydrogen_conc   = brenth_array(Residual, a, b, unknown_args=(k_1,), known_args=(k_4, k_6, k_7, H_H2S, P_H2S, M))
-    A               = ((P_H2S*k_6*k_7)/H_H2S)*((1+(hydrogen_conc/k_7))/(hydrogen_conc**2))
-    beta            = (1/M)*(A + (P_H2S/H_H2S))
+    fa              = Residual(a, A, B, T, k_4, k_6, k_7, H_H2S, P_H2S, M)
+    fb              = Residual(b, A, B, T, k_4, k_6, k_7, H_H2S, P_H2S, M)
+    hydrogen_conc   = brenth_array(Residual, a, b, unknown_args=(A, B), known_args=(T, k_4, k_6, k_7, H_H2S, P_H2S, M))
+    Paper_A         = ((P_H2S*k_6*k_7)/H_H2S)*((1+(hydrogen_conc/k_7))/(hydrogen_conc**2))
+    beta            = (1/M)*(Paper_A + (P_H2S/H_H2S))
     #
     return beta
 #
@@ -60,7 +62,8 @@ def inputs(P, T_F, A_w):
 # basically equation 14 (corrected) modified A to be in terms of x
 # x is hydrogen ion concentration
 # H_plus_conc should equal x
-def H_plus_func(x, k_1, k_4, k_6, k_7, H_H2S, P_H2S, M):
+def H_plus_func(x, A, B, T, k_4, k_6, k_7, H_H2S, P_H2S, M):
+    k_1             = exp(ln_k_1_function(T, A, B))
     D               = 1. + (M/(k_1*(1. + (x/k_1))))
     try:
         AddTerm1    = (k_4/x)/D
@@ -73,8 +76,8 @@ def H_plus_func(x, k_1, k_4, k_6, k_7, H_H2S, P_H2S, M):
     return H_plus_conc
 #
 #
-def Residual(x, k_1, k_4, k_6, k_7, H_H2S, P_H2S, M):
-    G = H_plus_func(x, k_1, k_4, k_6, k_7, H_H2S, P_H2S, M) - x  #residual equation, G should be 0
+def Residual(x, A, B, T, k_4, k_6, k_7, H_H2S, P_H2S, M):
+    G       = H_plus_func(x, A, B, T, k_4, k_6, k_7, H_H2S, P_H2S, M) - x  #residual equation, G should be 0
     return G 
 #
 #
@@ -109,14 +112,12 @@ def brenth_array(f, a, b, known_args=None, unknown_args=None):
         #
         arg_i           = tuple(temp_args)
         #
-        try:
-            out_zeros[i]    = brenth(Residual, a_i, b_i, args=arg_i)
-        except ValueError:
-            #print "a = %f"      % a_i
-            #print "b = %f"      % b_i
-            #print "fa = %f"     % Residual(a_i, arg_i[0], arg_i[1], arg_i[2], arg_i[3], arg_i[4], arg_i[5], arg_i[6])
-            #print "fb = %f"     % Residual(b_i, arg_i[0], arg_i[1], arg_i[2], arg_i[3], arg_i[4], arg_i[5], arg_i[6])
-            print arg_i
-        #   
+        out_zeros[i]    = brenth(Residual, a_i, b_i, args=arg_i)
+    #   
     #
     return out_zeros
+#
+#
+def ln_k_1_function(T, A, B):
+    # parameters A, B, C, D, E of k_1 function
+    return A + B*(T**-1)
