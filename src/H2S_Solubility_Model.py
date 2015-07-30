@@ -52,7 +52,7 @@ def inputs(P, T_F, A_w):
     P_H2S   = (P) * 51.7149326                  # partial pressure of H2S in mmHg
     T_C     = (((T_F) - 32)*(0.55555556))       # Temperature in Celsius
     T       = T_C + 273.15                      # Temperature in Kelvin
-    M       = (A_w * 1000)/(100 * 105.14)       # Molar concentration of amine, right now for DGA
+    M       = (A_w * 1000)/(100 * 119.163)      # Molar concentration of amine, right now for MDEA
     return (P_H2S, T, M) 
 #
 #

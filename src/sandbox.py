@@ -5,10 +5,10 @@ Created on Jul 16, 2015
 '''
 import numpy as np 
 from H2S_Solubility_Model import f , ln_k_1_function, inputs
-from DGA_DATA import *
+from MDEA_DATA import *
 from scipy.optimize import curve_fit
 #
-X_input         = np.zeros((3, 75))
+X_input         = np.zeros((3, 192))
 X_input[0, :]   = P
 X_input[1, :]   = T_F
 X_input[2, :]   = A_w
@@ -19,12 +19,9 @@ b_guess = -5652.
 
 Initial_guess = [A_guess, b_guess]
 #
-popt, pcov = curve_fit(f, X_input, Y_input, p0=Initial_guess)     # if you add bounds to k_1 do you not need to provide a guess?
-# even when it says it fails it produces the same output...
+popt, pcov = curve_fit(f, X_input, Y_input, p0=Initial_guess)     
 print popt
 print pcov
-# K1 = np.exp(ln_k_1_function(310.9278, popt[0], popt[1], popt[2], popt[3], popt[4], num_params=5))
-# print K1
 
 print Y_input
 print "---------------"
