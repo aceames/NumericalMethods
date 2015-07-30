@@ -5,16 +5,16 @@ Created on Jul 16, 2015
 '''
 import numpy as np 
 from H2S_Solubility_Model import f , ln_k_1_function, inputs
-from MDEA_DATA import *
+from Single_MDEA_DATA import *
 from scipy.optimize import curve_fit
 #
-X_input         = np.zeros((3, 192))
+X_input         = np.zeros((3, 24))
 X_input[0, :]   = P
 X_input[1, :]   = T_F
 X_input[2, :]   = A_w
 Y_input         = np.asarray(Loading)
 #
-A_guess = -3. 
+A_guess = -2. 
 b_guess = -5652.
 
 Initial_guess = [A_guess, b_guess]
