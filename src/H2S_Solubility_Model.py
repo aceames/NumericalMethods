@@ -120,4 +120,4 @@ def brenth_array(f, a, b, known_args=None, unknown_args=None):
 #
 def ln_k_1_function(T, M, A, B, B_M):
     # parameters A, B, C, D, E of k_1 function
-    return A + B*(T**-1) + B_M*M
+    return A + B*(T**-1) + B_M*(M**-1)
