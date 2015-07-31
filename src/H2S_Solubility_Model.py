@@ -13,7 +13,7 @@ from lmfit import Parameters
 # A_w = amine weight percent
 # These are the known inputs from the data
 # This function converts input into use-able form
-def f(Input_Array, A, B):
+def f(Input_Array, A, B, B_M):
     #
     [P, T_F, A_w]   = Input_Array
     (P_H2S, T, M)   = inputs(P, T_F, A_w)
@@ -21,16 +21,16 @@ def f(Input_Array, A, B):
     k_6             = exp(Get_Poly_Fit(T, k_6_coefficients))
     k_7             = exp(Get_Poly_Fit(T, k_7_coefficients))
     H_H2S           = exp(Get_Poly_Fit(T, H_H2S_coefficients))
-    k_1             = exp(ln_k_1_function(T, A, B))
+    k_1             = exp(ln_k_1_function(T, M, A, B, B_M))
     #
     num_obvs        = len(P)
     #
     a               = zeros((num_obvs)) + float(1.0e-12)
     b               = zeros((num_obvs)) + 1.
     #
-    fa              = Residual(a, A, B, T, k_4, k_6, k_7, H_H2S, P_H2S, M)
-    fb              = Residual(b, A, B, T, k_4, k_6, k_7, H_H2S, P_H2S, M)
-    hydrogen_conc   = brenth_array(Residual, a, b, unknown_args=(A, B), known_args=(T, k_4, k_6, k_7, H_H2S, P_H2S, M))
+    fa              = Residual(a, A, B, B_M, T, k_4, k_6, k_7, H_H2S, P_H2S, M)
+    fb              = Residual(b, A, B, B_M, T, k_4, k_6, k_7, H_H2S, P_H2S, M)
+    hydrogen_conc   = brenth_array(Residual, a, b, unknown_args=(A, B, B_M), known_args=(T, k_4, k_6, k_7, H_H2S, P_H2S, M))
     Paper_A         = ((P_H2S*k_6*k_7)/H_H2S)*((1+(hydrogen_conc/k_7))/(hydrogen_conc**2))
     beta            = (1/M)*(Paper_A + (P_H2S/H_H2S))
     #
@@ -62,8 +62,8 @@ def inputs(P, T_F, A_w):
 # basically equation 14 (corrected) modified A to be in terms of x
 # x is hydrogen ion concentration
 # H_plus_conc should equal x
-def H_plus_func(x, A, B, T, k_4, k_6, k_7, H_H2S, P_H2S, M):
-    k_1             = exp(ln_k_1_function(T, A, B))
+def H_plus_func(x, A, B, B_M, T, k_4, k_6, k_7, H_H2S, P_H2S, M):
+    k_1             = exp(ln_k_1_function(T, M, A, B, B_M))
     D               = 1. + (M/(k_1*(1. + (x/k_1))))
     try:
         AddTerm1    = (k_4/x)/D
@@ -76,8 +76,8 @@ def H_plus_func(x, A, B, T, k_4, k_6, k_7, H_H2S, P_H2S, M):
     return H_plus_conc
 #
 #
-def Residual(x, A, B, T, k_4, k_6, k_7, H_H2S, P_H2S, M):
-    G       = H_plus_func(x, A, B, T, k_4, k_6, k_7, H_H2S, P_H2S, M) - x  #residual equation, G should be 0
+def Residual(x, A, B, B_M, T, k_4, k_6, k_7, H_H2S, P_H2S, M):
+    G       = H_plus_func(x, A, B, B_M, T, k_4, k_6, k_7, H_H2S, P_H2S, M) - x  #residual equation, G should be 0
     return G 
 #
 #
@@ -118,6 +118,6 @@ def brenth_array(f, a, b, known_args=None, unknown_args=None):
     return out_zeros
 #
 #
-def ln_k_1_function(T, A, B):
+def ln_k_1_function(T, M, A, B, B_M):
     # parameters A, B, C, D, E of k_1 function
-    return A + B*(T**-1)
+    return A + B*(T**-1) + B_M*M
