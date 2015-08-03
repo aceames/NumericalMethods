@@ -5,10 +5,10 @@ Created on Jul 16, 2015
 '''
 import numpy as np 
 from H2S_Solubility_Model import f , ln_k_1_function, inputs
-from DEA_DATA import *
+from DGA_DATA import *
 from scipy.optimize import curve_fit
 #
-X_input         = np.zeros((3, 302))
+X_input         = np.zeros((3, 75))
 X_input[0, :]   = P
 X_input[1, :]   = T_F
 X_input[2, :]   = A_w
