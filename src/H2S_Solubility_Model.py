@@ -7,7 +7,6 @@ from scipy.optimize import brenth
 from numpy import exp, zeros
 from CONSTANTS import k_4_coefficients, k_6_coefficients, k_7_coefficients,\
     H_H2S_coefficients
-from lmfit import Parameters
 # P = total pressure in psig
 # T_F = temperature in fahrenheit 
 # A_w = amine weight percent
@@ -106,7 +105,7 @@ def brenth_array(f, a, b, known_args=None, unknown_args=None):
         a_i             = a[i]
         b_i             = b[i]
         assert(a_i > 0.0)
-        #
+        #Get
         for j in range(k):
             temp_args[l+j]    = known_args[j][i]
         #
