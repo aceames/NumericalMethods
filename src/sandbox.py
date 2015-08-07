@@ -4,41 +4,45 @@ Created on Jul 16, 2015
 @author: aeames
 '''
 import numpy as np 
-from H2S_Solubility_Model import f , ln_k_1_function, inputs
-from DGA_DATA import *
+import os
+from H2S_Solubility_Model import f , ln_k_1_function, ConvertInputs
+from Overhead.Functions import LoadAmineDataFromCSV,\
+    WriteOptimalCoefficientsToCSV
 from scipy.optimize import curve_fit
 #
-X_input         = np.zeros((3, 75))
-X_input[0, :]   = P
-X_input[1, :]   = T_F
-X_input[2, :]   = A_w
-Y_input         = np.asarray(Loading)
+#    Name the amine
 #
-A_guess = -2.
-b_guess = -5.5e3
-B_M_guess = 1.
-
-Initial_guess = [A_guess, b_guess, B_M_guess]
+AMINE_NAME      = "MDEA"
 #
-popt, pcov = curve_fit(f, X_input, Y_input, p0=Initial_guess)     
-print popt
-print pcov
-
-print Y_input
-print "---------------"
-print f(X_input, popt[0], popt[1], popt[2])
-
+#    Load data from /Data directory
 #
-# def ln_k_1_function(T, A, B, C, D, E, num_params):
-#     # parameters A, B, C, D, E of k_1 function
-#     if num_params == 2:
-#         C = 0
-#         D = 0
-#         E = 0
-#     elif num_params == 3:
-#         D = 0
-#         E = 0
-#     elif num_params == 4:
-#         E = 0
-#     return A + B*(T**-1)+C*(T**-2)+D*(T**-3)+E*(T**-4)
-        
+HOME_DIRECTORY  = os.getcwd()
+DATA_DIRECTORY  = HOME_DIRECTORY + r"\Data"
+os.chdir(DATA_DIRECTORY)
+Y, X            = LoadAmineDataFromCSV(InFileName = AMINE_NAME + ".csv")
+os.chdir(HOME_DIRECTORY)
+#
+#    Choose initial guesses foor the parameters
+#
+A_guess         = -2.0
+b_guess         = -5.5e3
+B_M_guess       = 1.
+Initial_guess   = [A_guess, b_guess, B_M_guess]
+#
+#    Curve Fit the data using Levenberg-Marquardt algorithm,
+#    The 
+#
+#print X
+
+popt, pcov = curve_fit(f, X, Y, p0=Initial_guess)     
+#
+#    Write results to /Results directory
+#
+RESULTS_DIRECTORY   = HOME_DIRECTORY + r"\Results"
+os.chdir(RESULTS_DIRECTORY)
+WriteOptimalCoefficientsToCSV(InFileName    = AMINE_NAME + "_OptimalCoeffs.csv",
+                              InPopt        = popt)
+os.chdir(HOME_DIRECTORY)  
+#   
+#
+#

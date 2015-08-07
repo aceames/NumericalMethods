@@ -5,9 +5,8 @@ Created on Jul 27, 2015
 '''
 from scipy.optimize import brenth
 from numpy import exp, zeros
-from CONSTANTS import k_4_coefficients, k_6_coefficients, k_7_coefficients,\
+from Overhead.Constants import k_4_coefficients, k_6_coefficients, k_7_coefficients,\
     H_H2S_coefficients
-    #hi hi
 # P = total pressure in psig
 # T_F = temperature in fahrenheit 
 # A_w = amine weight percent
@@ -15,21 +14,19 @@ from CONSTANTS import k_4_coefficients, k_6_coefficients, k_7_coefficients,\
 # This function converts input into use-able form
 def f(Input_Array, A, B, B_M):
     #
-    [P, T_F, A_w]   = Input_Array
-    (P_H2S, T, M)   = inputs(P, T_F, A_w)
-    k_4             = exp(Get_Poly_Fit(T, k_4_coefficients))
-    k_6             = exp(Get_Poly_Fit(T, k_6_coefficients))
-    k_7             = exp(Get_Poly_Fit(T, k_7_coefficients))
-    H_H2S           = exp(Get_Poly_Fit(T, H_H2S_coefficients))
-    k_1             = exp(ln_k_1_function(T, M, A, B, B_M))
+    [T_F, P, A_w, Amm]  = Input_Array
+    (P_H2S, T, M)       = ConvertInputs(P, T_F, A_w, Amm)
+    k_4                 = exp(Get_Poly_Fit(T, k_4_coefficients))
+    k_6                 = exp(Get_Poly_Fit(T, k_6_coefficients))
+    k_7                 = exp(Get_Poly_Fit(T, k_7_coefficients))
+    H_H2S               = exp(Get_Poly_Fit(T, H_H2S_coefficients))
+    k_1                 = exp(ln_k_1_function(T, M, A, B, B_M))
     #
     num_obvs        = len(P)
     #
-    a               = zeros((num_obvs)) + float(1.0e-12)
+    a               = zeros((num_obvs)) + float(1.0e-16)
     b               = zeros((num_obvs)) + 1.
     #
-    fa              = Residual(a, A, B, B_M, T, k_4, k_6, k_7, H_H2S, P_H2S, M)
-    fb              = Residual(b, A, B, B_M, T, k_4, k_6, k_7, H_H2S, P_H2S, M)
     hydrogen_conc   = brenth_array(Residual, a, b, unknown_args=(A, B, B_M), known_args=(T, k_4, k_6, k_7, H_H2S, P_H2S, M))
     Paper_A         = ((P_H2S*k_6*k_7)/H_H2S)*((1+(hydrogen_conc/k_7))/(hydrogen_conc**2))
     beta            = (1/M)*(Paper_A + (P_H2S/H_H2S))
@@ -48,11 +45,11 @@ def Get_Poly_Fit(In_temp, In_coefficients):
     
 #
 #
-def inputs(P, T_F, A_w):
-    P_H2S   = (P) * 51.7149326                  # partial pressure of H2S in mmHg
-    T_C     = (((T_F) - 32)*(0.55555556))       # Temperature in Celsius
-    T       = T_C + 273.15                      # Temperature in Kelvin
-    M       = (A_w * 1000)/(100 * 119.163)      # Molar concentration of amine, right now for MDEA
+def ConvertInputs(P, T_F, A_w, Amm):
+    P_H2S   = (P) * 51.7149326                      # partial pressure of H2S in mmHg
+    T_C     = (((T_F) - 32)*(0.55555556))           # Temperature in Celsius
+    T       = T_C + 273.15                          # Temperature in Kelvin
+    M       = (A_w * 1000)/(100 * Amm)              # Molar concentration of amine, right now for MDEA
     return (P_H2S, T, M) 
 #
 #
@@ -98,8 +95,8 @@ def brenth_array(f, a, b, known_args=None, unknown_args=None):
     out_zeros   = zeros((m))
     temp_args   = zeros((k+l))
     #
-    for bobross in range(l):
-        temp_args[bobross]  = unknown_args[bobross]
+    for i in range(l):
+        temp_args[i]  = unknown_args[i]
     #
     for i in range(m):
         #
@@ -112,7 +109,31 @@ def brenth_array(f, a, b, known_args=None, unknown_args=None):
         #
         arg_i           = tuple(temp_args)
         #
-        out_zeros[i]    = brenth(Residual, a_i, b_i, args=arg_i)
+        try:
+            out_zeros[i]    = brenth(Residual, a_i, b_i, args=arg_i)
+        except:
+            AAA = Residual(a_i, arg_i[0], 
+                                arg_i[1], 
+                                arg_i[2], 
+                                arg_i[3], 
+                                arg_i[4], 
+                                arg_i[5], 
+                                arg_i[6], 
+                                arg_i[7], 
+                                arg_i[8], 
+                                arg_i[9])
+            
+            B = Residual(b_i,   arg_i[0], 
+                                arg_i[1], 
+                                arg_i[2], 
+                                arg_i[3], 
+                                arg_i[4], 
+                                arg_i[5], 
+                                arg_i[6], 
+                                arg_i[7], 
+                                arg_i[8], 
+                                arg_i[9])
+            print AAA, B
     #   
     #
     return out_zeros
@@ -120,4 +141,4 @@ def brenth_array(f, a, b, known_args=None, unknown_args=None):
 #
 def ln_k_1_function(T, M, A, B, B_M):
     # parameters A, B, C, D, E of k_1 function
-    return A + B*(T**-1) + B_M*(M**-1)
+    return A + B*(T**-1) + B_M*(M)
