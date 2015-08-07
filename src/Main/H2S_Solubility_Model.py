@@ -13,21 +13,52 @@ from Overhead.Constants import k_4_coefficients, k_6_coefficients, k_7_coefficie
 # These are the known inputs from the data
 # This function converts input into use-able form
 def f(Input_Array, A, B, B_M):
+    '''
+    This function calculates total loading from H2S partial pressure,
+    temperature, and amine concentration
+    Inputs:
+        - Input_Array        :: 4xN NDARRAY    :: Contains 4 rows of inputs
+            - Input_Array[0] :: NDARRAY        :: Temperatures
+            - Input_Array[1] :: NDARRAY        :: H2S Partial Pressures
+            - Input_Array[2] :: NDARRAY        :: Amine Weight Percent
+            - Input_Array[3] :: NDARRAY        :: Amine Molar Mass
+        - A                  :: FLOAT          :: Guess for C0 (constant in fit)
+        - B                  :: FLOAT          :: Guess for C1 (T^-1 param in fit)
+        - B_M                :: FLOAT          :: Guess for C2 (M param in fit)
+    Outputs:
+        - beta               :: NDARRAY        :: Predicted loading for all N cases
+    '''
+    #
+    #    Convert from inputs:
+    #    from ... psi,  Fahrenheit, and weight percent 
+    #    to   ... mmHg, Kelvin,     and molar
     #
     [T_F, P, A_w, Amm]  = Input_Array
     (P_H2S, T, M)       = ConvertInputs(P, T_F, A_w, Amm)
+    #
+    #    Retrieve values of the equilibrium constants and Henry's
+    #    Law at a given temperature per the polynomial fits in 
+    #    Abu-Arabi's paper
+    #
     k_4                 = exp(Get_Poly_Fit(T, k_4_coefficients))
     k_6                 = exp(Get_Poly_Fit(T, k_6_coefficients))
     k_7                 = exp(Get_Poly_Fit(T, k_7_coefficients))
     H_H2S               = exp(Get_Poly_Fit(T, H_H2S_coefficients))
-    k_1                 = exp(ln_k_1_function(T, M, A, B, B_M))
     #
     num_obvs        = len(P)
+    #
+    #    Estimate bounding values on H2 concentration
     #
     a               = zeros((num_obvs)) + float(1.0e-16)
     b               = zeros((num_obvs)) + 1.
     #
+    #    Find H2 concentration
+    #
     hydrogen_conc   = brenth_array(Residual, a, b, unknown_args=(A, B, B_M), known_args=(T, k_4, k_6, k_7, H_H2S, P_H2S, M))
+    #
+    #    Infer loading from H2 concentration per Abu-Arabi's paper
+    #    (in which he defines the parameter A)
+    #
     Paper_A         = ((P_H2S*k_6*k_7)/H_H2S)*((1+(hydrogen_conc/k_7))/(hydrogen_conc**2))
     beta            = (1/M)*(Paper_A + (P_H2S/H_H2S))
     #
@@ -36,6 +67,15 @@ def f(Input_Array, A, B, B_M):
 #
 #
 def Get_Poly_Fit(In_temp, In_coefficients):
+    '''
+    Return value of polynomial fit given coefficients of 
+    some parameter for a 4th order polynomial in T^-1
+    Inputs:
+        - In_Temp            :: NDARRAY        :: Temperatures for calc in Kelvin
+        - In_coefficients    :: len-5 NDARRAY  :: Coefficients 0 - 4 of poly-fit
+    Outputs:
+        - K4, K6, K7, H_H2S  :: NDARRAY        :: Result depends on input coeffs
+    '''
     return  In_coefficients[0]                   + \
             In_coefficients[1] * (1./(In_temp))    + \
             In_coefficients[2] * (1./(In_temp**2)) + \
@@ -46,6 +86,18 @@ def Get_Poly_Fit(In_temp, In_coefficients):
 #
 #
 def ConvertInputs(P, T_F, A_w, Amm):
+    '''
+    Converts units of inputs
+    Inputs:
+        - P        :: NDARRAY    :: H2S Partial Pressure in psi
+        - T_F      :: NDARRAY    :: Temperature in Fahrenheit
+        - A_w      :: NDARRAY    :: Amine weight percent
+        - Amm      :: NDARRAY    :: Amine molar mass
+    Outputs:
+        - P_H2S    :: NDARRAY    :: H2S Partial Pressure in mmHg
+        - T        :: NDARRAY    :: Temeprature in Kelvin
+        - M        :: NDARRAY    :: Amine concentration in molar
+    '''
     P_H2S   = (P) * 51.7149326                      # partial pressure of H2S in mmHg
     T_C     = (((T_F) - 32)*(0.55555556))           # Temperature in Celsius
     T       = T_C + 273.15                          # Temperature in Kelvin
