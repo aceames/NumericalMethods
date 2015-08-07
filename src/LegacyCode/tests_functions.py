@@ -5,7 +5,7 @@ Created on Jul 17, 2015
 '''
 from nose.tools import *
 import numpy as np
-from Functions import HouseholderReflection, QRFactorization
+from LegacyCode.Functions import HouseholderReflection, QRFactorization
 #
 def test_HouseholderReflection():
     x = np.matrix([[1], [2], [3]])

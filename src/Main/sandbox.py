@@ -5,7 +5,7 @@ Created on Jul 16, 2015
 '''
 import numpy as np 
 import os
-from H2S_Solubility_Model import f , ln_k_1_function, ConvertInputs
+from Main.H2S_Solubility_Model import f , ln_k_1_function, ConvertInputs
 from Overhead.Functions import LoadAmineDataFromCSV,\
     WriteOptimalCoefficientsToCSV
 from scipy.optimize import curve_fit

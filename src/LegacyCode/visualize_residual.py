@@ -5,7 +5,7 @@ Created on Jul 28, 2015
 '''
 import matplotlib.pyplot as plt
 from numpy import linspace, exp, zeros, log10
-from H2S_Solubility_Model import Residual
+from Main.H2S_Solubility_Model import Residual
 #
 #
 #
