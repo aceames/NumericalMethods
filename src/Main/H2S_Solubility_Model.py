@@ -98,22 +98,46 @@ def ConvertInputs(P, T_F, A_w, Amm):
         - T        :: NDARRAY    :: Temeprature in Kelvin
         - M        :: NDARRAY    :: Amine concentration in molar
     '''
-    P_H2S   = (P) * 51.7149326                      # partial pressure of H2S in mmHg
-    T_C     = (((T_F) - 32)*(0.55555556))           # Temperature in Celsius
-    T       = T_C + 273.15                          # Temperature in Kelvin
-    M       = (A_w * 1000)/(100 * Amm)              # Molar concentration of amine, right now for MDEA
+    P_H2S   = (P) * 51.7149326                      
+    T_C     = (((T_F) - 32)*(0.55555556))           
+    T       = T_C + 273.15                          
+    M       = (A_w * 1000)/(100 * Amm)              
     return (P_H2S, T, M) 
 #
 #
 #
 #
-# function to find hydrogen ion concentration
-# basically equation 14 (corrected) modified A to be in terms of x
-# x is hydrogen ion concentration
-# H_plus_conc should equal x
+
 def H_plus_func(x, A, B, B_M, T, k_4, k_6, k_7, H_H2S, P_H2S, M):
+    '''
+    Find the concentration of H+ in solution, Equation # in Section 7 of Technical Report.
+    Inputs:
+        - x             :: NDARRAY      :: H2 concentration
+        - A             :: FLOAT        :: Guess for C0 (constant in fit)
+        - B             :: FLOAT        :: Guess for C1 (T^-1 param in fit)
+        - B_M           :: FLOAT        :: Guess for C2 (M param in fit)
+        - T             :: NDARRAY      :: Temperature in Kelvin
+        - k_4           :: NDARRAY      :: Equilibrium Constant
+        - k_6           :: NDARRAY      :: Equilibrium Constant
+        - k_7           :: NDARRAY      :: Equilibrium Constant
+        - H_H2S         :: NDARRAY      :: Henry's Law Constant
+        - P_H2S         :: NDARRAY      :: Partial Pressure of H2S in mmHg
+        - M             :: NDARRAY      :: Molar Amine Concentration
+    Outputs:
+        -H_plus_conc    :: NDARRAY      :: H2 concentration
+    '''
+    #
+    # Calculate k_1 equilibrium constant with parameter guesses
+    #
     k_1             = exp(ln_k_1_function(T, M, A, B, B_M))
+    #
+    # Calculated a term that appears twice in the denominator of the expression
+    #
     D               = 1. + (M/(k_1*(1. + (x/k_1))))
+    #
+    # Terms added to find H2 concentration
+    # from Abu-Arabi equation 14
+    #
     try:
         AddTerm1    = (k_4/x)/D
         AddTerm2    = ((P_H2S*k_6*k_7)/H_H2S)*((1.+(x/k_7))/(x**2.))*(1./D)*(1.+(k_7/(1.+x)))
@@ -126,7 +150,26 @@ def H_plus_func(x, A, B, B_M, T, k_4, k_6, k_7, H_H2S, P_H2S, M):
 #
 #
 def Residual(x, A, B, B_M, T, k_4, k_6, k_7, H_H2S, P_H2S, M):
-    G       = H_plus_func(x, A, B, B_M, T, k_4, k_6, k_7, H_H2S, P_H2S, M) - x  #residual equation, G should be 0
+    '''
+    Function for residual, G should be 0 to find true H2 value.
+    Abu-Arabi equation 14 set equal to 0. 
+    Inputs:
+        - x             :: NDARRAY      :: H2 concentration
+        - A             :: FLOAT        :: Guess for C0 (constant in fit)
+        - B             :: FLOAT        :: Guess for C1 (T^-1 param in fit)
+        - B_M           :: FLOAT        :: Guess for C2 (M param in fit)
+        - T             :: NDARRAY      :: Temperature in Kelvin
+        - k_4           :: NDARRAY      :: Equilibrium Constant
+        - k_6           :: NDARRAY      :: Equilibrium Constant
+        - k_7           :: NDARRAY      :: Equilibrium Constant
+        - H_H2S         :: NDARRAY      :: Henry's Law Constant
+        - P_H2S         :: NDARRAY      :: Partial Pressure of H2S in mmHg
+        - M             :: NDARRAY      :: Molar Amine Concentration
+    Outputs:
+        -G              :: NDARRAY      :: Value of Residual, should be 0
+    '''
+    
+    G       = H_plus_func(x, A, B, B_M, T, k_4, k_6, k_7, H_H2S, P_H2S, M) - x  
     return G 
 #
 #
@@ -134,6 +177,15 @@ def Residual(x, A, B, B_M, T, k_4, k_6, k_7, H_H2S, P_H2S, M):
 def brenth_array(f, a, b, known_args=None, unknown_args=None):
     #
     '''
+    Applies brenth root-finding method to an array.
+    Inputs:
+        - f             :: FUNCTION        :: A function in NDARRAY that we need the root of
+        - a             :: NDARRAY         :: Lower bound
+        - b             :: NDARRAY         :: Upper bound
+        - known_args    :: TUPLE           :: T, k_4, k_6, k_7, H_H2S, P_H2S, M
+        - unkown_args   :: TUPLE           :: A, B, B_M
+    Output:
+        -out_zeros      :: NDARRAY         :: Roots of function f
     NOTE: The known arguments and unknown arguments are concatenated 
           with the known arguments appearing first.
     '''  
@@ -141,25 +193,46 @@ def brenth_array(f, a, b, known_args=None, unknown_args=None):
     assert(isinstance(known_args, tuple))
     assert(isinstance(unknown_args, tuple))
     #
+    # m is the number of rows of a
+    #
     m           = a.shape[0]
+    #
+    # k is the number of elements in known_args
+    #
     k           = len(known_args)
+    #
+    # l is the number of elements in unknown args
+    #
     l           = len(unknown_args)
+    #
+    # out_zeros is an array with m rows
+    #
     out_zeros   = zeros((m))
+    #
+    # temp_args is an array with k+1 rows?
+    #
     temp_args   = zeros((k+l))
+    #
+    # begin with the ith element of temp_args and unknown_args being the same
     #
     for i in range(l):
         temp_args[i]  = unknown_args[i]
     #
+    # access the elements of a and b
+    #
     for i in range(m):
         #
-        a_i             = a[i]
-        b_i             = b[i]
+        a_i             = a[i]      
+        b_i             = b[i]      
         assert(a_i > 0.0)
-        #Get
+        #
         for j in range(k):
             temp_args[l+j]    = known_args[j][i]
         #
         arg_i           = tuple(temp_args)
+        #
+        # use brenth on the ith value of each argument then update out_zero
+        # to create an array of all of the zeros
         #
         try:
             out_zeros[i]    = brenth(Residual, a_i, b_i, args=arg_i)
@@ -192,5 +265,17 @@ def brenth_array(f, a, b, known_args=None, unknown_args=None):
 #
 #
 def ln_k_1_function(T, M, A, B, B_M):
-    # parameters A, B, C, D, E of k_1 function
-    return A + B*(T**-1) + B_M*(M)
+    ''' Function of equilibrium constant K1 to be optimized.
+    Inputs:
+        - T             :: NDARRAY      :: Temperature in Kelvin
+        - M             :: NDARRAY      :: Molar Amine Concentration
+        - A             :: FLOAT        :: Guess for C0 (constant in fit)
+        - B             :: FLOAT        :: Guess for C1 (T^-1 param in fit)
+        - B_M           :: FLOAT        :: Guess for C2 (M param in fit)
+    Outputs:
+        -ln_k_1         :: NDARRAY      :: Natural log of K1 at each temperature and concentration
+    '''
+    #
+    ln_k_1              = A + B*(T**-1) + B_M*(M)
+    #
+    return ln_k_1
