@@ -7,11 +7,9 @@ from scipy.optimize import brenth
 from numpy import exp, zeros
 from Overhead.Constants import k_4_coefficients, k_6_coefficients, k_7_coefficients,\
     H_H2S_coefficients
-# P = total pressure in psig
-# T_F = temperature in fahrenheit 
-# A_w = amine weight percent
-# These are the known inputs from the data
-# This function converts input into use-able form
+#
+#
+#
 def f(Input_Array, A, B, B_M):
     '''
     This function calculates total loading from H2S partial pressure,
@@ -209,7 +207,7 @@ def brenth_array(f, a, b, known_args=None, unknown_args=None):
     #
     out_zeros   = zeros((m))
     #
-    # temp_args is an array with k+1 rows?
+    # temp_args is an array with k+1 rows
     #
     temp_args   = zeros((k+l))
     #
@@ -279,3 +277,5 @@ def ln_k_1_function(T, M, A, B, B_M):
     ln_k_1              = A + B*(T**-1) + B_M*(M)
     #
     return ln_k_1
+#
+#
